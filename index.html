@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #1a1a1a;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            padding: 20px;
+        }
+        
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card.positive { background-color: #1e3a8a; }
+        .metric-card.negative { background-color: #c9a96e; }
+        .metric-card.neutral { background-color: #374151; }
+        .metric-card.teal { background-color: #1e3a8a; }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .chart-container {
+            background-color: #262626;
+            border-radius: 12px;
+            padding: 25px;
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chart-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            background-color: #374151;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+        
+        .chart-btn.active {
+            background-color: #1e3a8a;
+            color: white;
+        }
+        
+        .chart-canvas {
+            position: relative;
+            height: 300px;
+        }
+        
+        .annual-chart .chart-canvas {
+            height: 250px;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+            .metric-value {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="metrics-grid">
+            <div class="metric-card positive">
+                <div class="metric-value">$17,433</div>
+                <div class="metric-label">Total Profit</div>
+            </div>
+            <div class="metric-card positive">
+                <div class="metric-value">177.9%</div>
+                <div class="metric-label">Total Return</div>
+            </div>
+            <div class="metric-card negative">
+                <div class="metric-value">-9.9%</div>
+                <div class="metric-label">Max Drawdown</div>
+            </div>
+            <div class="metric-card teal">
+                <div class="metric-value">3.7</div>
+                <div class="metric-label">Sharpe Ratio</div>
+            </div>
+            <div class="metric-card positive">
+                <div class="metric-value">80.1%</div>
+                <div class="metric-label">Win Rate</div>
+            </div>
+            <div class="metric-card neutral">
+                <div class="metric-value">$27,325</div>
+                <div class="metric-label">Current Funds</div>
+            </div>
+            <div class="metric-card teal">
+                <div class="metric-value">$24 / lot</div>
+                <div class="metric-label">Avg Per Trade</div>
+            </div>
+            <div class="metric-card teal">
+                <div class="metric-value">$118 / lot</div>
+                <div class="metric-label">Avg Winner</div>
+            </div>
+            <div class="metric-card negative">
+                <div class="metric-value">-$352 / lot</div>
+                <div class="metric-label">Avg Loser</div>
+            </div>
+            <div class="metric-card teal">
+                <div class="metric-value">$173 / lot</div>
+                <div class="metric-label">Max Winner</div>
+            </div>
+            <div class="metric-card negative">
+                <div class="metric-value">-$789 / lot</div>
+                <div class="metric-label">Max Loser</div>
+            </div>
+            <div class="metric-card neutral">
+                <div class="metric-value">1.5</div>
+                <div class="metric-label">Avg Days In Trade</div>
+            </div>
+            <div class="metric-card neutral">
+                <div class="metric-value">714</div>
+                <div class="metric-label">Trades</div>
+            </div>
+            <div class="metric-card positive">
+                <div class="metric-value">572</div>
+                <div class="metric-label">Winners</div>
+            </div>
+            <div class="metric-card neutral">
+                <div class="metric-value">$9,832</div>
+                <div class="metric-label">Starting Capital</div>
+            </div>
+            <div class="metric-card positive">
+                <div class="metric-value">$27,325</div>
+                <div class="metric-label">Ending Capital</div>
+            </div>
+        </div>
+        
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">📈 Funds By Date</div>
+                    <div class="chart-controls">
+                        <button class="chart-btn active" id="linear-btn">Linear</button>
+                        <button class="chart-btn" id="log-btn">Logarithmic</button>
+                    </div>
+                </div>
+                <div class="chart-canvas">
+                    <canvas id="funds-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container annual-chart">
+                <div class="chart-header">
+                    <div class="chart-title">📊 Annual Metrics</div>
+                </div>
+                <div class="chart-canvas">
+                    <canvas id="annual-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let fundsChart, annualChart;
+        let isLogScale = false;
+
+        // Complete daily trading data - ALL 358 data points from your CSV
+        const tradingData = [
+          { date: '2022-05-18', funds: 9570.52 },
+          { date: '2022-05-24', funds: 9273.8 },
+          { date: '2022-05-27', funds: 9082.08 },
+          { date: '2022-05-31', funds: 9312.6 },
+          { date: '2022-06-07', funds: 9613.12 },
+          { date: '2022-06-16', funds: 9411.4 },
+          { date: '2022-06-22', funds: 9681.92 },
+          { date: '2022-06-24', funds: 9505.2 },
+          { date: '2022-06-27', funds: 9765.72 },
+          { date: '2022-06-29', funds: 10011.24 },
+          { date: '2022-07-05', funds: 10306.76 },
+          { date: '2022-07-07', funds: 10582.28 },
+          { date: '2022-07-11', funds: 10230.56 },
+          { date: '2022-07-18', funds: 10496.08 },
+          { date: '2022-07-20', funds: 10379.36 },
+          { date: '2022-07-21', funds: 10619.88 },
+          { date: '2022-07-25', funds: 10880.4 },
+          { date: '2022-07-28', funds: 10838.68 },
+          { date: '2022-07-29', funds: 10596.96 },
+          { date: '2022-08-01', funds: 10822.48 },
+          { date: '2022-08-04', funds: 11093 },
+          { date: '2022-08-11', funds: 10826.28 },
+          { date: '2022-08-12', funds: 10614.56 },
+          { date: '2022-08-15', funds: 10835.08 },
+          { date: '2022-08-17', funds: 11100.6 },
+          { date: '2022-08-19', funds: 10793.88 },
+          { date: '2022-08-24', funds: 11039.4 },
+          { date: '2022-08-26', funds: 10862.68 },
+          { date: '2022-08-29', funds: 11148.2 },
+          { date: '2022-08-31', funds: 11393.72 },
+          { date: '2022-09-06', funds: 11664.24 },
+          { date: '2022-09-08', funds: 11964.76 },
+          { date: '2022-09-12', funds: 11773.04 },
+          { date: '2022-09-15', funds: 12018.56 },
+          { date: '2022-09-22', funds: 11706.84 },
+          { date: '2022-09-23', funds: 11485.12 },
+          { date: '2022-10-04', funds: 11303.4 },
+          { date: '2022-10-05', funds: 11558.92 },
+          { date: '2022-10-24', funds: 11447.2 },
+          { date: '2022-10-26', funds: 11727.72 },
+          { date: '2022-10-28', funds: 11496 },
+          { date: '2022-10-31', funds: 11791.52 },
+          { date: '2022-11-02', funds: 11594.8 },
+          { date: '2022-11-07', funds: 11543.08 },
+          { date: '2022-11-09', funds: 11326.36 },
+          { date: '2022-11-10', funds: 10989.64 },
+          { date: '2022-11-11', funds: 10812.92 },
+          { date: '2022-11-16', funds: 11088.44 },
+          { date: '2022-11-21', funds: 11348.96 },
+          { date: '2022-11-23', funds: 11629.48 },
+          { date: '2022-11-30', funds: 11432.76 },
+          { date: '2022-12-01', funds: 11241.04 },
+          { date: '2022-12-02', funds: 11486.56 },
+          { date: '2022-12-07', funds: 11742.08 },
+          { date: '2022-12-09', funds: 11977.6 },
+          { date: '2022-12-14', funds: 12243.12 },
+          { date: '2022-12-20', funds: 12518.64 },
+          { date: '2022-12-22', funds: 12246.92 },
+          { date: '2022-12-27', funds: 12487.44 },
+          { date: '2023-01-11', funds: 12295.72 },
+          { date: '2023-01-12', funds: 12581.24 },
+          { date: '2023-01-17', funds: 12881.76 },
+          { date: '2023-01-19', funds: 12575.04 },
+          { date: '2023-01-23', funds: 12393.32 },
+          { date: '2023-01-24', funds: 12608.84 },
+          { date: '2023-01-27', funds: 12427.12 },
+          { date: '2023-01-30', funds: 12120.4 },
+          { date: '2023-02-01', funds: 11973.68 },
+          { date: '2023-02-02', funds: 11896.96 },
+          { date: '2023-02-03', funds: 12152.48 },
+          { date: '2023-02-09', funds: 12398 },
+          { date: '2023-02-15', funds: 12653.52 },
+          { date: '2023-02-24', funds: 12376.8 },
+          { date: '2023-02-28', funds: 12632.32 },
+          { date: '2023-03-02', funds: 12912.84 },
+          { date: '2023-03-06', funds: 13148.36 },
+          { date: '2023-03-08', funds: 13393.88 },
+          { date: '2023-03-10', funds: 13217.16 },
+          { date: '2023-03-13', funds: 13482.68 },
+          { date: '2023-03-15', funds: 13738.2 },
+          { date: '2023-03-22', funds: 14003.72 },
+          { date: '2023-03-24', funds: 14274.24 },
+          { date: '2023-03-28', funds: 14524.76 },
+          { date: '2023-03-30', funds: 14313.04 },
+          { date: '2023-03-31', funds: 14091.32 },
+          { date: '2023-04-03', funds: 14296.84 },
+          { date: '2023-04-05', funds: 14562.36 },
+          { date: '2023-04-12', funds: 14787.88 },
+          { date: '2023-04-14', funds: 15043.4 },
+          { date: '2023-04-19', funds: 15268.92 },
+          { date: '2023-04-24', funds: 15499.44 },
+          { date: '2023-04-27', funds: 15272.72 },
+          { date: '2023-04-28', funds: 15463.24 },
+          { date: '2023-05-04', funds: 15176.52 },
+          { date: '2023-05-08', funds: 15407.04 },
+          { date: '2023-05-11', funds: 15647.56 },
+          { date: '2023-05-15', funds: 15883.08 },
+          { date: '2023-05-18', funds: 15761.36 },
+          { date: '2023-05-22', funds: 15961.88 },
+          { date: '2023-05-26', funds: 15725.16 },
+          { date: '2023-05-30', funds: 15920.68 },
+          { date: '2023-06-02', funds: 15798.96 },
+          { date: '2023-06-05', funds: 15984.48 },
+          { date: '2023-06-07', funds: 16165 },
+          { date: '2023-06-09', funds: 15943.28 },
+          { date: '2023-06-12', funds: 15811.56 },
+          { date: '2023-06-14', funds: 16042.08 },
+          { date: '2023-06-16', funds: 16277.6 },
+          { date: '2023-06-22', funds: 16468.12 },
+          { date: '2023-06-28', funds: 16658.64 },
+          { date: '2023-06-30', funds: 16351.92 },
+          { date: '2023-07-03', funds: 16537.44 },
+          { date: '2023-07-10', funds: 16747.96 },
+          { date: '2023-07-12', funds: 16376.24 },
+          { date: '2023-07-13', funds: 16164.52 },
+          { date: '2023-07-14', funds: 16355.04 },
+          { date: '2023-07-19', funds: 16535.56 },
+          { date: '2023-07-21', funds: 16751.08 },
+          { date: '2023-07-26', funds: 16981.6 },
+          { date: '2023-07-28', funds: 16774.88 },
+          { date: '2023-07-31', funds: 16965.4 },
+          { date: '2023-08-07', funds: 17190.92 },
+          { date: '2023-08-10', funds: 17421.44 },
+          { date: '2023-08-17', funds: 17174.72 },
+          { date: '2023-08-18', funds: 17405.24 },
+          { date: '2023-08-23', funds: 17288.52 },
+          { date: '2023-08-24', funds: 16931.8 },
+          { date: '2023-08-28', funds: 17152.32 },
+          { date: '2023-08-30', funds: 16935.6 },
+          { date: '2023-08-31', funds: 17126.12 },
+          { date: '2023-09-05', funds: 17351.64 },
+          { date: '2023-09-07', funds: 17567.16 },
+          { date: '2023-09-11', funds: 17185.44 },
+          { date: '2023-09-12', funds: 17365.96 },
+          { date: '2023-09-14', funds: 17129.24 },
+          { date: '2023-09-15', funds: 16792.52 },
+          { date: '2023-09-18', funds: 16998.04 },
+          { date: '2023-09-20', funds: 17263.56 },
+          { date: '2023-09-25', funds: 17509.08 },
+          { date: '2023-09-28', funds: 17734.6 },
+          { date: '2023-10-02', funds: 17975.12 },
+          { date: '2023-10-05', funds: 18210.64 },
+          { date: '2023-10-11', funds: 18466.16 },
+          { date: '2023-10-13', funds: 18676.68 },
+          { date: '2023-10-17', funds: 18882.2 },
+          { date: '2023-10-20', funds: 18595.48 },
+          { date: '2023-10-24', funds: 18821 },
+          { date: '2023-10-26', funds: 18579.28 },
+          { date: '2023-10-30', funds: 18387.56 },
+          { date: '2023-10-31', funds: 18623.08 },
+          { date: '2023-11-02', funds: 18386.36 },
+          { date: '2023-11-03', funds: 18169.64 },
+          { date: '2023-11-06', funds: 18340.16 },
+          { date: '2023-11-08', funds: 18540.68 },
+          { date: '2023-11-10', funds: 18398.96 },
+          { date: '2023-11-13', funds: 18619.48 },
+          { date: '2023-11-15', funds: 18855 },
+          { date: '2023-11-17', funds: 19045.52 },
+          { date: '2023-11-21', funds: 19261.04 },
+          { date: '2023-11-24', funds: 19466.56 },
+          { date: '2023-11-29', funds: 19094.84 },
+          { date: '2023-11-30', funds: 19305.36 },
+          { date: '2023-12-04', funds: 19013.64 },
+          { date: '2023-12-06', funds: 19229.16 },
+          { date: '2023-12-08', funds: 19459.68 },
+          { date: '2023-12-14', funds: 19327.96 },
+          { date: '2023-12-15', funds: 19543.48 },
+          { date: '2023-12-19', funds: 19754 },
+          { date: '2023-12-21', funds: 19974.52 },
+          { date: '2023-12-26', funds: 20180.04 },
+          { date: '2024-01-09', funds: 20375.56 },
+          { date: '2024-01-11', funds: 20158.84 },
+          { date: '2024-01-12', funds: 20389.36 },
+          { date: '2024-01-19', funds: 20157.64 },
+          { date: '2024-01-22', funds: 20368.16 },
+          { date: '2024-01-24', funds: 20101.44 },
+          { date: '2024-01-25', funds: 20311.96 },
+          { date: '2024-01-29', funds: 20210.24 },
+          { date: '2024-01-31', funds: 19913.52 },
+          { date: '2024-02-01', funds: 20159.04 },
+          { date: '2024-02-05', funds: 19842.32 },
+          { date: '2024-02-06', funds: 20047.84 },
+          { date: '2024-02-08', funds: 20248.36 },
+          { date: '2024-02-12', funds: 20458.88 },
+          { date: '2024-02-15', funds: 20237.16 },
+          { date: '2024-02-16', funds: 20432.68 },
+          { date: '2024-02-23', funds: 20668.2 },
+          { date: '2024-02-27', funds: 20878.72 },
+          { date: '2024-02-29', funds: 21094.24 },
+          { date: '2024-03-04', funds: 21314.76 },
+          { date: '2024-03-06', funds: 20933.04 },
+          { date: '2024-03-07', funds: 20721.32 },
+          { date: '2024-03-08', funds: 20946.84 },
+          { date: '2024-03-13', funds: 21197.36 },
+          { date: '2024-03-15', funds: 21417.88 },
+          { date: '2024-03-19', funds: 21643.4 },
+          { date: '2024-03-21', funds: 21441.68 },
+          { date: '2024-03-22', funds: 21677.2 },
+          { date: '2024-03-27', funds: 21862.72 },
+          { date: '2024-04-01', funds: 22093.24 },
+          { date: '2024-04-05', funds: 22333.76 },
+          { date: '2024-04-09', funds: 22097.04 },
+          { date: '2024-04-10', funds: 22372.56 },
+          { date: '2024-04-12', funds: 22080.84 },
+          { date: '2024-04-16', funds: 22316.36 },
+          { date: '2024-04-18', funds: 22566.88 },
+          { date: '2024-04-23', funds: 22470.16 },
+          { date: '2024-04-24', funds: 22695.68 },
+          { date: '2024-04-29', funds: 22921.2 },
+          { date: '2024-05-01', funds: 23146.72 },
+          { date: '2024-05-03', funds: 22950 },
+          { date: '2024-05-06', funds: 22868.28 },
+          { date: '2024-05-07', funds: 22646.56 },
+          { date: '2024-05-08', funds: 22852.08 },
+          { date: '2024-05-10', funds: 23057.6 },
+          { date: '2024-05-15', funds: 22900.88 },
+          { date: '2024-05-16', funds: 23131.4 },
+          { date: '2024-05-21', funds: 23356.92 },
+          { date: '2024-05-23', funds: 23587.44 },
+          { date: '2024-05-28', funds: 23817.96 },
+          { date: '2024-05-31', funds: 23576.24 },
+          { date: '2024-06-03', funds: 23522.28 },
+          { date: '2024-06-04', funds: 23302.8 },
+          { date: '2024-06-06', funds: 23508.32 },
+          { date: '2024-06-10', funds: 23748.84 },
+          { date: '2024-06-12', funds: 23532.12 },
+          { date: '2024-06-13', funds: 23807.64 },
+          { date: '2024-06-20', funds: 24033.16 },
+          { date: '2024-06-24', funds: 24238.68 },
+          { date: '2024-06-26', funds: 24454.2 },
+          { date: '2024-06-28', funds: 24237.48 },
+          { date: '2024-07-01', funds: 24458 },
+          { date: '2024-07-08', funds: 24658.52 },
+          { date: '2024-07-10', funds: 24371.8 },
+          { date: '2024-07-11', funds: 24607.32 },
+          { date: '2024-07-15', funds: 24420.6 },
+          { date: '2024-07-17', funds: 24043.88 },
+          { date: '2024-07-19', funds: 24279.4 },
+          { date: '2024-07-23', funds: 24529.92 },
+          { date: '2024-07-26', funds: 24398.2 },
+          { date: '2024-07-29', funds: 24638.72 },
+          { date: '2024-07-31', funds: 24427 },
+          { date: '2024-08-01', funds: 24280.28 },
+          { date: '2024-08-02', funds: 24048.56 },
+          { date: '2024-08-07', funds: 24344.08 },
+          { date: '2024-08-09', funds: 24629.6 },
+          { date: '2024-08-13', funds: 24427.88 },
+          { date: '2024-08-14', funds: 24673.4 },
+          { date: '2024-08-16', funds: 24958.92 },
+          { date: '2024-08-21', funds: 25184.44 },
+          { date: '2024-08-23', funds: 24942.72 },
+          { date: '2024-08-26', funds: 25208.24 },
+          { date: '2024-08-29', funds: 25498.76 },
+          { date: '2024-09-03', funds: 25292.04 },
+          { date: '2024-09-06', funds: 25045.32 },
+          { date: '2024-09-09', funds: 24998.6 },
+          { date: '2024-09-10', funds: 25259.12 },
+          { date: '2024-09-12', funds: 25007.4 },
+          { date: '2024-09-13', funds: 25247.92 },
+          { date: '2024-09-18', funds: 25508.44 },
+          { date: '2024-09-20', funds: 25743.96 },
+          { date: '2024-09-24', funds: 25944.48 },
+          { date: '2024-09-26', funds: 25557.76 },
+          { date: '2024-09-27', funds: 25743.28 },
+          { date: '2024-09-30', funds: 25511.56 },
+          { date: '2024-10-01', funds: 25624.32 },
+          { date: '2024-10-02', funds: 25727.08 },
+          { date: '2024-10-07', funds: 25992.6 },
+          { date: '2024-10-09', funds: 25835.88 },
+          { date: '2024-10-10', funds: 26051.4 },
+          { date: '2024-10-14', funds: 25899.68 },
+          { date: '2024-10-15', funds: 25592.96 },
+          { date: '2024-10-16', funds: 25828.48 },
+          { date: '2024-10-18', funds: 26099 },
+          { date: '2024-10-24', funds: 26299.52 },
+          { date: '2024-10-28', funds: 26540.04 },
+          { date: '2024-10-30', funds: 26735.56 },
+          { date: '2024-11-04', funds: 26976.08 },
+          { date: '2024-11-06', funds: 26494.36 },
+          { date: '2024-11-08', funds: 26754.88 },
+          { date: '2024-11-12', funds: 26975.4 },
+          { date: '2024-11-14', funds: 26633.68 },
+          { date: '2024-11-15', funds: 26326.96 },
+          { date: '2024-11-18', funds: 26180.24 },
+          { date: '2024-11-21', funds: 26083.52 },
+          { date: '2024-11-22', funds: 26319.04 },
+          { date: '2024-11-26', funds: 26202.32 },
+          { date: '2024-11-29', funds: 25950.6 },
+          { date: '2024-12-03', funds: 26156.12 },
+          { date: '2024-12-05', funds: 26366.64 },
+          { date: '2024-12-09', funds: 26099.92 },
+          { date: '2024-12-11', funds: 25868.2 },
+          { date: '2024-12-12', funds: 25441.48 },
+          { date: '2024-12-16', funds: 25214.76 },
+          { date: '2024-12-17', funds: 24868.04 },
+          { date: '2024-12-19', funds: 24526.32 },
+          { date: '2024-12-20', funds: 24454.6 },
+          { date: '2024-12-23', funds: 24665.12 },
+          { date: '2025-01-02', funds: 24920.64 },
+          { date: '2025-01-15', funds: 24458.92 },
+          { date: '2025-01-16', funds: 24739.44 },
+          { date: '2025-01-21', funds: 24989.96 },
+          { date: '2025-01-23', funds: 25245.48 },
+          { date: '2025-01-27', funds: 24548.76 },
+          { date: '2025-01-29', funds: 24769.28 },
+          { date: '2025-01-31', funds: 25059.8 },
+          { date: '2025-02-05', funds: 25330.32 },
+          { date: '2025-02-07', funds: 25600.84 },
+          { date: '2025-02-11', funds: 25866.36 },
+          { date: '2025-02-14', funds: 26106.88 },
+          { date: '2025-02-21', funds: 25810.16 },
+          { date: '2025-02-24', funds: 26035.68 },
+          { date: '2025-02-26', funds: 26321.2 },
+          { date: '2025-02-28', funds: 26601.72 },
+          { date: '2025-03-04', funds: 26310 },
+          { date: '2025-03-10', funds: 26038.28 },
+          { date: '2025-03-13', funds: 25786.56 },
+          { date: '2025-03-14', funds: 25599.84 },
+          { date: '2025-03-17', funds: 25523.12 },
+          { date: '2025-03-18', funds: 25211.4 },
+          { date: '2025-03-20', funds: 25496.92 },
+          { date: '2025-03-25', funds: 25737.44 },
+          { date: '2025-03-27', funds: 25982.96 },
+          { date: '2025-04-02', funds: 25856.24 },
+          { date: '2025-04-16', funds: 25509.52 },
+          { date: '2025-04-24', funds: 25392.8 },
+          { date: '2025-04-25', funds: 25658.32 },
+          { date: '2025-04-29', funds: 25903.84 },
+          { date: '2025-05-02', funds: 26189.36 },
+          { date: '2025-05-08', funds: 26077.64 },
+          { date: '2025-05-09', funds: 26308.16 },
+          { date: '2025-05-14', funds: 26563.68 },
+          { date: '2025-05-16', funds: 26799.2 },
+          { date: '2025-05-21', funds: 26567.48 },
+          { date: '2025-05-23', funds: 26175.76 },
+          { date: '2025-05-28', funds: 26431.28 },
+          { date: '2025-05-30', funds: 26671.8 },
+          { date: '2025-06-04', funds: 26902.32 },
+          { date: '2025-06-06', funds: 27137.84 },
+          { date: '2025-06-11', funds: 27378.36 },
+          { date: '2025-06-17', funds: 27623.88 },
+          { date: '2025-06-20', funds: 27884.4 },
+          { date: '2025-06-24', funds: 27437.68 },
+          { date: '2025-06-25', funds: 27613.2 },
+          { date: '2025-06-27', funds: 27411.48 },
+          { date: '2025-06-30', funds: 27079.76 },
+          { date: '2025-07-02', funds: 27260.28 },
+          { date: '2025-07-09', funds: 27078.56 },
+          { date: '2025-07-10', funds: 27274.08 },
+          { date: '2025-07-16', funds: 26997.36 },
+          { date: '2025-07-17', funds: 26860.64 },
+          { date: '2025-07-18', funds: 27081.16 },
+          { date: '2025-07-23', funds: 26829.44 },
+          { date: '2025-07-24', funds: 26999.96 },
+          { date: '2025-07-28', funds: 27240.48 },
+          { date: '2025-07-30', funds: 27456 },
+          { date: '2025-08-01', funds: 27084.28 },
+          { date: '2025-08-05', funds: 27324.8 }
+        ];
+
+        function createFundsChart() {
+            const ctx = document.getElementById('funds-chart').getContext('2d');
+            
+            const labels = tradingData.map(d => {
+                const date = new Date(d.date);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+            });
+            const data = tradingData.map(d => d.funds);
+
+            fundsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: data,
+                        borderColor: '#1e3a8a',
+                        backgroundColor: 'rgba(30, 58, 138, 0.15)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fbbf24',
+                            bodyColor: 'white',
+                            borderColor: '#fbbf24',
+                            borderWidth: 1,
+                            callbacks: {
+                                title: function(context) {
+                                    return tradingData[context[0].dataIndex].date;
+                                },
+                                label: function(context) {
+                                    return 'Portfolio: $' + context.parsed.y.toLocaleString(undefined, {maximumFractionDigits: 0});
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                color: '#374151'
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                maxTicksLimit: 8
+                            }
+                        },
+                        y: {
+                            display: true,
+                            grid: {
+                                color: '#374151'
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        function createAnnualChart() {
+            const ctx = document.getElementById('annual-chart').getContext('2d');
+            
+            annualChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['2022', '2023', '2024', '2025'],
+                    datasets: [{
+                        label: 'Return',
+                        data: [25.8, 58.3, 20.1, 9.8],
+                        backgroundColor: '#1e3a8a',
+                        borderRadius: 4,
+                        borderSkipped: false,
+                        maxBarThickness: 40
+                    }, {
+                        label: 'MDD',
+                        data: [-5.2, -3.8, -4.1, -2.9],
+                        backgroundColor: '#c9a96e',
+                        borderRadius: 4,
+                        borderSkipped: false,
+                        maxBarThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#1e3a8a',
+                            bodyColor: 'white',
+                            borderColor: '#1e3a8a',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label;
+                                    const value = context.parsed.y;
+                                    return label + ': ' + (value > 0 ? '+' : '') + value + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: '#374151'
+                            },
+                            ticks: {
+                                color: '#9ca3af'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: '#374151'
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function toggleScale() {
+            isLogScale = !isLogScale;
+            
+            const linearBtn = document.getElementById('linear-btn');
+            const logBtn = document.getElementById('log-btn');
+            
+            if (isLogScale) {
+                linearBtn.classList.remove('active');
+                logBtn.classList.add('active');
+                fundsChart.options.scales.y.type = 'logarithmic';
+                fundsChart.options.scales.y.min = 8000;
+            } else {
+                logBtn.classList.remove('active');
+                linearBtn.classList.add('active');
+                fundsChart.options.scales.y.type = 'linear';
+                delete fundsChart.options.scales.y.min;
+            }
+            
+            fundsChart.update();
+        }
+
+        // Event listeners
+        document.getElementById('linear-btn').addEventListener('click', () => {
+            if (isLogScale) toggleScale();
+        });
+
+        document.getElementById('log-btn').addEventListener('click', () => {
+            if (!isLogScale) toggleScale();
+        });
+
+        // Initialize charts immediately
+        createFundsChart();
+        createAnnualChart();
+    </script>
+</body>
+</html>
